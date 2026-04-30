@@ -1,0 +1,27 @@
+CREATE DATABASE IF NOT EXISTS meu_projeto_financas;
+USE meu_projeto_financas;
+
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    senha_hash VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    saldo DECIMAL(10, 2) DEFAULT 0.0,
+    usuario_id INT,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS transacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    descricao VARCHAR(200) NOT NULL,
+    valor DECIMAL(10, 2) NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    data DATETIME DEFAULT CURRENT_TIMESTAMP,
+    conta_id INT,
+    FOREIGN KEY (conta_id) REFERENCES contas(id) ON DELETE CASCADE
+);
