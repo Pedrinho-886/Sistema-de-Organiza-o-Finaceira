@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+# C:/Sistema-de-Organiza-o-Finaceira/sist_front/backend_python/schemas.py
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -12,9 +13,7 @@ class UsuarioCreate(UsuarioBase):
 
 class UsuarioResponse(UsuarioBase):
     id: int
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Schemas de Conta
 class ContaBase(BaseModel):
@@ -27,9 +26,7 @@ class ContaCreate(ContaBase):
 class ContaResponse(ContaBase):
     id: int
     usuario_id: int
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Schemas de Transação
 class TransacaoBase(BaseModel):
@@ -44,6 +41,4 @@ class TransacaoResponse(TransacaoBase):
     id: int
     conta_id: int
     data: datetime
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

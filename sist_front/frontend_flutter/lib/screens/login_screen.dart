@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/animated_fade_in.dart';
 import 'main_navigation_screen.dart';
+import 'registration_screen.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +14,36 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  final _apiService = ApiService();
+
+  void _login() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await _apiService.login(
+        _emailController.text,
+        _senhaController.text,
+      );
+      
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Color(0xFFE8ECE9)], // Branco e cinza/verde muito claro
+            colors: [Colors.white, Color(0xFFE8ECE9)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -35,7 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Logo Animado
                       AnimatedFadeIn(
                         delay: const Duration(milliseconds: 100),
                         child: Container(
@@ -57,8 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
-                      // Textos Animados
                       AnimatedFadeIn(
                         delay: const Duration(milliseconds: 200),
                         child: Column(
@@ -83,8 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 48),
-                      
-                      // Login Glassmorphism Card Animado
                       AnimatedFadeIn(
                         delay: const Duration(milliseconds: 400),
                         child: ClipRRect(
@@ -112,8 +138,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-                                  // Campo Email
                                   TextFormField(
+                                    controller: _emailController,
                                     style: const TextStyle(color: AppTheme.lightPrimary),
                                     decoration: const InputDecoration(
                                       labelText: 'E-mail',
@@ -122,8 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     keyboardType: TextInputType.emailAddress,
                                   ),
                                   const SizedBox(height: 16),
-                                  // Campo Senha
                                   TextFormField(
+                                    controller: _senhaController,
                                     style: const TextStyle(color: AppTheme.lightPrimary),
                                     decoration: InputDecoration(
                                       labelText: 'Senha',
@@ -141,30 +167,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     obscureText: !_isPasswordVisible,
                                   ),
-                                  const SizedBox(height: 12),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton(
-                                      onPressed: () {},
-                                      child: const Text('Esqueci minha senha'),
-                                    ),
-                                  ),
                                   const SizedBox(height: 24),
-                                  // Botão Entrar
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pushReplacement(
-                                        context,
-                                        PageRouteBuilder(
-                                          pageBuilder: (context, animation, secondaryAnimation) => const MainNavigationScreen(),
-                                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                            return FadeTransition(opacity: animation, child: child);
-                                          },
-                                        ),
-                                      );
-                                    },
-                                    child: const Text('ENTRAR'),
-                                  ),
+                                  _isLoading 
+                                    ? const Center(child: CircularProgressIndicator())
+                                    : ElevatedButton(
+                                        onPressed: _login,
+                                        child: const Text('ENTRAR'),
+                                      ),
                                 ],
                               ),
                             ),
@@ -172,8 +181,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
-                      // Rodapé Animado
                       AnimatedFadeIn(
                         delay: const Duration(milliseconds: 600),
                         child: Row(
@@ -181,8 +188,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             const Text('Ainda não tem uma conta? ', style: TextStyle(color: AppTheme.lightPrimary)),
                             TextButton(
-                              onPressed: () {},
-                              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+                                );
+                              },
                               child: const Text('Cadastre-se', style: TextStyle(fontWeight: FontWeight.bold)),
                             ),
                           ],
