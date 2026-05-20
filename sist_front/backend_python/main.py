@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import engine, get_db
 import models, schemas
 from passlib.context import CryptContext
+from typing import List
 
 # Configuração de segurança para senhas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -24,15 +25,12 @@ app.add_middleware(
 
 @app.post("/usuarios/", response_model=schemas.UsuarioResponse)
 def criar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    # Verificar se o email já existe
     db_usuario = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
     if db_usuario:
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     
-    # Criar hash da senha
     hashed_password = pwd_context.hash(usuario.senha)
     
-    # Salvar no banco
     novo_usuario = models.Usuario(
         nome=usuario.nome, 
         email=usuario.email, 
@@ -45,7 +43,6 @@ def criar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db))
 
 @app.post("/login")
 def login(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    # Buscar usuário por email
     db_usuario = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
     
     if not db_usuario or not pwd_context.verify(usuario.senha, db_usuario.senha_hash):
@@ -59,3 +56,52 @@ def login(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
 @app.get("/")
 def read_root():
     return {"status": "Arquitetura Online", "database": "Conectado"}
+
+# --- Rotas de Contas ---
+@app.get("/contas/{usuario_id}", response_model=List[schemas.ContaResponse])
+def listar_contas(usuario_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Conta).filter(models.Conta.usuario_id == usuario_id).all()
+
+@app.post("/contas/", response_model=schemas.ContaResponse)
+def criar_conta(conta: schemas.ContaCreate, db: Session = Depends(get_db)):
+    nova_conta = models.Conta(**conta.model_dump())
+    db.add(nova_conta)
+    db.commit()
+    db.refresh(nova_conta)
+    return nova_conta
+
+# --- Rotas de Transações ---
+@app.get("/transacoes/{conta_id}", response_model=List[schemas.TransacaoResponse])
+def listar_transacoes(conta_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Transacao).filter(models.Transacao.conta_id == conta_id).all()
+
+@app.post("/transacoes/", response_model=schemas.TransacaoResponse)
+def criar_transacao(transacao: schemas.TransacaoCreate, db: Session = Depends(get_db)):
+    db_conta = db.query(models.Conta).filter(models.Conta.id == transacao.conta_id).first()
+    if not db_conta:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    
+    nova_transacao = models.Transacao(**transacao.model_dump())
+    
+    if transacao.tipo.lower() == "receita":
+        db_conta.saldo += transacao.valor
+    else:
+        db_conta.saldo -= transacao.valor
+        
+    db.add(nova_transacao)
+    db.commit()
+    db.refresh(nova_transacao)
+    return nova_transacao
+
+# --- Rotas de Reservas ---
+@app.get("/reservas/{usuario_id}", response_model=List[schemas.ReservaResponse])
+def listar_reservas(usuario_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Reserva).filter(models.Reserva.usuario_id == usuario_id).all()
+
+@app.post("/reservas/", response_model=schemas.ReservaResponse)
+def criar_reserva(reserva: schemas.ReservaCreate, db: Session = Depends(get_db)):
+    nova_reserva = models.Reserva(**reserva.model_dump())
+    db.add(nova_reserva)
+    db.commit()
+    db.refresh(nova_reserva)
+    return nova_reserva

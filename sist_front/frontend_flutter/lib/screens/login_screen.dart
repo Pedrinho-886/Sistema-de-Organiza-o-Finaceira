@@ -31,7 +31,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+          MaterialPageRoute(
+            builder: (context) => MainNavigationScreen(
+              usuarioId: response['usuario_id'],
+            ),
+          ),
         );
       }
     } catch (e) {

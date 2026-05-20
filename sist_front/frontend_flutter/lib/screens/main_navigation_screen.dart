@@ -7,7 +7,8 @@ import 'portfolio_screen.dart';
 import 'reserves_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int usuarioId;
+  const MainNavigationScreen({super.key, required this.usuarioId});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -16,13 +17,19 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    TransactionsScreen(),
-    DashboardScreen(),
-    PortfolioScreen(),
-    ReservesScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(usuarioId: widget.usuarioId),
+      const TransactionsScreen(),
+      const DashboardScreen(),
+      const PortfolioScreen(),
+      const ReservesScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
