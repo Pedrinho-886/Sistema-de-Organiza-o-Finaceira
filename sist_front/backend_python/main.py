@@ -70,6 +70,30 @@ def criar_conta(conta: schemas.ContaCreate, db: Session = Depends(get_db)):
     db.refresh(nova_conta)
     return nova_conta
 
+@app.delete("/contas/{conta_id}")
+def excluir_conta(conta_id: int, db: Session = Depends(get_db)):
+    db_conta = db.query(models.Conta).filter(models.Conta.id == conta_id).first()
+    if not db_conta:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    
+    # Ao excluir a conta, as transações vinculadas serão excluídas via CASCADE no Banco de Dados
+    db.delete(db_conta)
+    db.commit()
+    return {"message": "Conta excluída com sucesso"}
+
+@app.put("/contas/{conta_id}", response_model=schemas.ContaResponse)
+def atualizar_conta(conta_id: int, conta_update: schemas.ContaBase, db: Session = Depends(get_db)):
+    db_conta = db.query(models.Conta).filter(models.Conta.id == conta_id).first()
+    if not db_conta:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    
+    db_conta.nome = conta_update.nome
+    db_conta.saldo = conta_update.saldo
+    
+    db.commit()
+    db.refresh(db_conta)
+    return db_conta
+
 # --- Rotas de Transações ---
 @app.get("/transacoes/{conta_id}", response_model=List[schemas.TransacaoResponse])
 def listar_transacoes(conta_id: int, db: Session = Depends(get_db)):
@@ -92,6 +116,56 @@ def criar_transacao(transacao: schemas.TransacaoCreate, db: Session = Depends(ge
     db.commit()
     db.refresh(nova_transacao)
     return nova_transacao
+
+@app.delete("/transacoes/{transacao_id}")
+def excluir_transacao(transacao_id: int, db: Session = Depends(get_db)):
+    db_transacao = db.query(models.Transacao).filter(models.Transacao.id == transacao_id).first()
+    if not db_transacao:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    # Reverter o saldo na conta
+    db_conta = db.query(models.Conta).filter(models.Conta.id == db_transacao.conta_id).first()
+    if db_conta:
+        if db_transacao.tipo.lower() == "receita":
+            db_conta.saldo -= db_transacao.valor
+        else:
+            db_conta.saldo += db_transacao.valor
+            
+    db.delete(db_transacao)
+    db.commit()
+    return {"message": "Transação excluída com sucesso"}
+
+@app.put("/transacoes/{transacao_id}", response_model=schemas.TransacaoResponse)
+def atualizar_transacao(transacao_id: int, transacao_update: schemas.TransacaoCreate, db: Session = Depends(get_db)):
+    db_transacao = db.query(models.Transacao).filter(models.Transacao.id == transacao_id).first()
+    if not db_transacao:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    # 1. Reverter saldo antigo
+    conta_antiga = db.query(models.Conta).filter(models.Conta.id == db_transacao.conta_id).first()
+    if conta_antiga:
+        if db_transacao.tipo.lower() == "receita":
+            conta_antiga.saldo -= db_transacao.valor
+        else:
+            conta_antiga.saldo += db_transacao.valor
+            
+    # 2. Aplicar novo saldo
+    conta_nova = db.query(models.Conta).filter(models.Conta.id == transacao_update.conta_id).first()
+    if not conta_nova:
+        raise HTTPException(status_code=404, detail="Conta destino não encontrada")
+        
+    if transacao_update.tipo.lower() == "receita":
+        conta_nova.saldo += transacao_update.valor
+    else:
+        conta_nova.saldo -= transacao_update.valor
+        
+    # 3. Atualizar dados
+    for key, value in transacao_update.model_dump().items():
+        setattr(db_transacao, key, value)
+        
+    db.commit()
+    db.refresh(db_transacao)
+    return db_transacao
 
 # --- Rotas de Reservas ---
 @app.get("/reservas/{usuario_id}", response_model=List[schemas.ReservaResponse])

@@ -64,6 +64,34 @@ class ApiService {
     }
   }
 
+  Future<void> excluirConta(int id) async {
+    final response = await http.delete(Uri.parse('$baseUrl/contas/$id'));
+    if (response.statusCode != 200) {
+      throw Exception('Erro ao excluir conta');
+    }
+  }
+
+  Future<Map<String, dynamic>> atualizarConta({
+    required int id,
+    required String nome,
+    required double saldo,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/contas/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'nome': nome,
+        'saldo': saldo,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Erro ao atualizar conta');
+    }
+  }
+
   Future<Map<String, dynamic>> adicionarTransacao({
     required int contaId,
     required double valor,
@@ -88,5 +116,63 @@ class ApiService {
     } else {
       throw Exception('Erro ao registrar transação');
     }
+  }
+
+  Future<void> excluirTransacao(int id) async {
+    final response = await http.delete(Uri.parse('$baseUrl/transacoes/$id'));
+    if (response.statusCode != 200) {
+      throw Exception('Erro ao excluir transação');
+    }
+  }
+
+  Future<Map<String, dynamic>> atualizarTransacao({
+    required int id,
+    required int contaId,
+    required double valor,
+    required String descricao,
+    required String categoria,
+    required String tipo,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/transacoes/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'conta_id': contaId,
+        'valor': valor,
+        'descricao': descricao,
+        'tipo': tipo,
+        'categoria': categoria,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Erro ao atualizar transação');
+    }
+  }
+
+  Future<List<dynamic>> listarTodasTransacoes(int usuarioId) async {
+    // Primeiro pegamos as contas do usuário
+    final contas = await listarContas(usuarioId);
+    List<dynamic> todasTransacoes = [];
+
+    // Para cada conta, buscamos as transações
+    for (var conta in contas) {
+      final response = await http.get(Uri.parse('$baseUrl/transacoes/${conta['id']}'));
+      if (response.statusCode == 200) {
+        final transacoesConta = jsonDecode(response.body);
+        // Adicionamos o nome da conta para exibir na lista
+        for (var t in transacoesConta) {
+          t['nome_conta'] = conta['nome'];
+        }
+        todasTransacoes.addAll(transacoesConta);
+      }
+    }
+
+    // Ordenar por data (mais recente primeiro)
+    todasTransacoes.sort((a, b) => b['data'].compareTo(a['data']));
+    
+    return todasTransacoes;
   }
 }

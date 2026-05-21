@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> _contas = [];
+  List<dynamic> _transacoes = [];
   double _patrimonioTotal = 0.0;
   bool _isLoading = true;
 
@@ -30,12 +31,16 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isLoading = true);
     try {
       final contas = await _apiService.listarContas(widget.usuarioId);
+      final transacoes = await _apiService.listarTodasTransacoes(widget.usuarioId);
+      
       double total = 0;
       for (var conta in contas) {
         total += double.parse(conta['saldo'].toString());
       }
+      
       setState(() {
         _contas = contas;
+        _transacoes = transacoes;
         _patrimonioTotal = total;
         _isLoading = false;
       });
@@ -51,6 +56,114 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatarMoeda(double valor) {
     return NumberFormat.simpleCurrency(locale: 'pt_BR').format(valor);
+  }
+
+  String _formatarData(String dataString) {
+    final DateTime data = DateTime.parse(dataString).toLocal();
+    final DateTime agora = DateTime.now();
+    
+    if (data.day == agora.day && data.month == agora.month && data.year == agora.year) {
+      return 'Hoje, ${DateFormat.Hm().format(data)}';
+    }
+    return DateFormat('dd/MM, HH:mm').format(data);
+  }
+
+  void _mostrarOpcoesConta(dynamic conta) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('Editar Conta'),
+            onTap: () {
+              Navigator.pop(context);
+              _mostrarDialogoEdicaoConta(conta);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete, color: Colors.red),
+            title: const Text('Excluir Conta', style: TextStyle(color: Colors.red)),
+            onTap: () {
+              Navigator.pop(context);
+              _confirmarExclusaoConta(conta);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogoEdicaoConta(dynamic conta) {
+    final _nomeController = TextEditingController(text: conta['nome']);
+    final _saldoController = TextEditingController(text: conta['saldo'].toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Conta'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _nomeController,
+              decoration: const InputDecoration(labelText: 'Nome da Conta'),
+            ),
+            TextField(
+              controller: _saldoController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Saldo Atual'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await _apiService.atualizarConta(
+                  id: conta['id'],
+                  nome: _nomeController.text,
+                  saldo: double.parse(_saldoController.text),
+                );
+                Navigator.pop(context);
+                _carregarDados();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao atualizar: $e')));
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmarExclusaoConta(dynamic conta) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Conta'),
+        content: Text('Tem certeza que deseja excluir a conta "${conta['nome']}"? Todas as transações vinculadas serão apagadas.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              try {
+                await _apiService.excluirConta(conta['id']);
+                Navigator.pop(context);
+                _carregarDados();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao excluir: $e')));
+              }
+            },
+            child: const Text('Excluir', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -152,7 +265,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Componente de Acesso Rápido / Contas UI
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -192,11 +304,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               final conta = _contas[index];
                               return Padding(
                                 padding: const EdgeInsets.only(right: 16.0),
-                                child: _buildRealContaItem(
-                                  context,
-                                  Icons.account_balance,
-                                  conta['nome'],
-                                  _formatarMoeda(double.parse(conta['saldo'].toString())),
+                                child: GestureDetector(
+                                  onLongPress: () => _mostrarOpcoesConta(conta),
+                                  child: _buildRealContaItem(
+                                    context,
+                                    Icons.account_balance,
+                                    conta['nome'],
+                                    _formatarMoeda(double.parse(conta['saldo'].toString())),
+                                  ),
                                 ),
                               );
                             },
@@ -204,7 +319,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
               const SizedBox(height: 32),
 
-              // Transações Rápidas (Estático por enquanto)
               Text(
                 'Últimas Movimentações',
                 style: TextStyle(
@@ -213,8 +327,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: 12),
-              _buildTransacao(context, 'Exemplo de Gasto', 'Hoje', '- R\$ 0,00', true),
-              _buildTransacao(context, 'Exemplo de Receita', 'Ontem', '+ R\$ 0,00', false),
+              _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _transacoes.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: Text("Nenhuma movimentação ainda.")),
+                    )
+                  : Column(
+                      children: _transacoes.take(10).map((t) {
+                        bool isDespesa = t['tipo'].toString().toLowerCase() == 'despesa';
+                        return _buildRealTransacao(
+                          context,
+                          t['descricao'],
+                          '${_formatarData(t['data'])} • ${t['nome_conta']}',
+                          '${isDespesa ? '-' : '+'} ${_formatarMoeda(double.parse(t['valor'].toString()))}',
+                          isDespesa,
+                          t['categoria'],
+                        );
+                      }).toList(),
+                    ),
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -296,8 +429,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTransacao(
-      BuildContext context, String titulo, String data, String valor, bool isDespesa) {
+  Widget _buildRealTransacao(
+      BuildContext context, String titulo, String data, String valor, bool isDespesa, String categoria) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -324,14 +457,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(titulo,
             style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(data),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data, style: const TextStyle(fontSize: 12)),
+            Text(categoria, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary)),
+          ],
+        ),
         trailing: Text(
           valor,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: 15,
             color: isDespesa
-                ? Theme.of(context).colorScheme.onSurface
+                ? Colors.redAccent
                 : Theme.of(context).colorScheme.primary,
           ),
         ),
