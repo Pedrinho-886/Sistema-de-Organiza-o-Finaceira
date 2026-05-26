@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
+import '../core/theme/tema_app.dart';
 
 class ReservesScreen extends StatelessWidget {
   const ReservesScreen({super.key});

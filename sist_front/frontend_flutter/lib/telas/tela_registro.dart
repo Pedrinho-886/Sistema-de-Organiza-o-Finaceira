@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
-import '../core/widgets/animated_fade_in.dart';
-import '../services/api_service.dart';
+import '../core/theme/tema_app.dart';
+import '../core/widgets/fade_in_animado.dart';
+import '../servicos/servico_api.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});

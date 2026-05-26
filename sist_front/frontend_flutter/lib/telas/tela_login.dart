@@ -1,10 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
-import '../core/widgets/animated_fade_in.dart';
-import 'main_navigation_screen.dart';
-import 'registration_screen.dart';
-import '../services/api_service.dart';
+import '../core/theme/tema_app.dart';
+import '../core/widgets/fade_in_animado.dart';
+import 'tela_navegacao_principal.dart';
+import 'tela_registro.dart';
+import '../servicos/servico_api.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

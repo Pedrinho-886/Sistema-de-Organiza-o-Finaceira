@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
-import 'home_screen.dart';
-import 'transactions_screen.dart';
-import 'dashboard_screen.dart';
-import 'portfolio_screen.dart';
-import 'reserves_screen.dart';
+import '../core/theme/tema_app.dart';
+import 'tela_home.dart';
+import 'tela_transacoes.dart';
+import 'tela_dashboard.dart';
+import 'tela_portfolio.dart';
+import 'tela_reservas.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final int usuarioId;

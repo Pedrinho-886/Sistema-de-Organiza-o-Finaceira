@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../services/api_service.dart';
+import '../servicos/servico_api.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {

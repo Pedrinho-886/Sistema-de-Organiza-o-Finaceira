@@ -1,30 +1,28 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../servicos/servico_api.dart';
 
-class AddExpenseScreen extends StatefulWidget {
+class AddIncomeScreen extends StatefulWidget {
   final int usuarioId;
-  const AddExpenseScreen({super.key, required this.usuarioId});
+  const AddIncomeScreen({super.key, required this.usuarioId});
 
   @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
+  State<AddIncomeScreen> createState() => _AddIncomeScreenState();
 }
 
-class _AddExpenseScreenState extends State<AddExpenseScreen> {
+class _AddIncomeScreenState extends State<AddIncomeScreen> {
   final _valorController = TextEditingController();
   final _descricaoController = TextEditingController();
-  String _categoriaSelecionada = 'Alimentação';
+  String _categoriaSelecionada = 'Salário';
   int? _contaSelecionada;
   List<dynamic> _contas = [];
   bool _isLoading = false;
   final _apiService = ApiService();
 
   final List<String> _categorias = [
-    'Alimentação',
-    'Transporte',
-    'Lazer',
-    'Saúde',
-    'Educação',
-    'Moradia',
+    'Salário',
+    'Renda Extra',
+    'Investimentos',
+    'Presente',
     'Outros'
   ];
 
@@ -40,7 +38,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       setState(() {
         _contas = contas;
         if (contas.isNotEmpty) {
-          _contaSelecionada = int.parse(contas[0]['id'].toString());
+          _contaSelecionada = contas[0]['id'];
         }
       });
     } catch (e) {
@@ -65,7 +63,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         valor: double.parse(_valorController.text.replaceAll(',', '.')),
         descricao: _descricaoController.text.isEmpty ? _categoriaSelecionada : _descricaoController.text,
         categoria: _categoriaSelecionada,
-        tipo: 'despesa',
+        tipo: 'receita',
       );
       if (mounted) {
         Navigator.pop(context, true);
@@ -82,11 +80,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrar Gasto / Despesa'),
-        backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Adicionar Saldo / Renda')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -94,13 +88,15 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             DropdownButtonFormField<int>(
               value: _contaSelecionada,
               hint: const Text('Selecione uma conta'),
-              decoration: const InputDecoration(labelText: 'Pagar com a conta:'),
-              items: _contas.map<DropdownMenuItem<int>>((conta) {
-                return DropdownMenuItem<int>(
-                  value: int.parse(conta['id'].toString()),
-                  child: Text(conta['nome']),
-                );
-              }).toList(),
+              decoration: const InputDecoration(labelText: 'Conta de Destino'),
+              items: _contas.isEmpty 
+                ? [] 
+                : _contas.map<DropdownMenuItem<int>>((conta) {
+                    return DropdownMenuItem<int>(
+                      value: int.parse(conta['id'].toString()),
+                      child: Text(conta['nome']),
+                    );
+                  }).toList(),
               onChanged: (val) => setState(() => _contaSelecionada = val),
             ),
             const SizedBox(height: 16),
@@ -108,14 +104,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               controller: _valorController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
-                labelText: 'Valor Gasto (R\$)',
-                prefixIcon: Icon(Icons.money_off, color: Colors.red),
+                labelText: 'Valor (R\$)',
+                prefixIcon: Icon(Icons.attach_money),
               ),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _categoriaSelecionada,
-              decoration: const InputDecoration(labelText: 'Categoria do Gasto'),
+              decoration: const InputDecoration(labelText: 'Origem da Renda'),
               items: _categorias.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
               onChanged: (val) => setState(() => _categoriaSelecionada = val!),
             ),
@@ -123,7 +119,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             TextField(
               controller: _descricaoController,
               decoration: const InputDecoration(
-                labelText: 'Descrição (Ex: Almoço, Uber...)',
+                labelText: 'Observação (Opcional)',
                 prefixIcon: Icon(Icons.edit),
               ),
             ),
@@ -133,11 +129,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 : ElevatedButton(
                     onPressed: _salvar,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text('REGISTRAR DESPESA'),
+                    child: const Text('ADICIONAR SALDO'),
                   ),
           ],
         ),

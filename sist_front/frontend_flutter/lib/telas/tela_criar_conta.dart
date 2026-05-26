@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import '../servicos/servico_api.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   final int usuarioId;

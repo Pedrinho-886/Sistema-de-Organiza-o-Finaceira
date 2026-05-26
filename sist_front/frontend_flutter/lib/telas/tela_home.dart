@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'add_income_screen.dart';
-import 'add_expense_screen.dart';
-import 'create_account_screen.dart';
-import '../services/api_service.dart';
+import 'tela_login.dart';
+import 'tela_adicionar_receita.dart';
+import 'tela_adicionar_despesa.dart';
+import 'tela_criar_conta.dart';
+import '../servicos/servico_api.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {

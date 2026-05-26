@@ -1,4 +1,4 @@
-# C:/Sistema-de-Organiza-o-Finaceira/sist_front/backend_python/schemas.py
+# C:/Sistema-de-Organiza-o-Finaceira/sist_front/backend_python/esquemas.py
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime

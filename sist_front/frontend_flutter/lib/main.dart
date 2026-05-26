@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'core/theme/app_theme.dart';
-import 'screens/login_screen.dart';
+import 'core/theme/tema_app.dart';
+import 'telas/tela_login.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
