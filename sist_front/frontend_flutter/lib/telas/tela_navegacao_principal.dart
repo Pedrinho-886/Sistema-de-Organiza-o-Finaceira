@@ -27,7 +27,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       TransactionsScreen(usuarioId: widget.usuarioId),
       DashboardScreen(usuarioId: widget.usuarioId),
       const PortfolioScreen(),
-      const ReservesScreen(),
+      ReservesScreen(usuarioId: widget.usuarioId),
     ];
   }
 

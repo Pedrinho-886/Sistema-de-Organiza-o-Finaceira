@@ -179,3 +179,27 @@ def criar_reserva(reserva: esquemas.ReservaCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(nova_reserva)
     return nova_reserva
+
+@app.put("/reservas/{reserva_id}", response_model=esquemas.ReservaResponse)
+def atualizar_reserva(reserva_id: int, reserva_update: esquemas.ReservaBase, db: Session = Depends(get_db)):
+    db_reserva = db.query(modelos.Reserva).filter(modelos.Reserva.id == reserva_id).first()
+    if not db_reserva:
+        raise HTTPException(status_code=404, detail="Reserva não encontrada")
+    
+    db_reserva.nome_meta = reserva_update.nome_meta
+    db_reserva.valor_meta = reserva_update.valor_meta
+    db_reserva.valor_acumulado = reserva_update.valor_acumulado
+    
+    db.commit()
+    db.refresh(db_reserva)
+    return db_reserva
+
+@app.delete("/reservas/{reserva_id}")
+def excluir_reserva(reserva_id: int, db: Session = Depends(get_db)):
+    db_reserva = db.query(modelos.Reserva).filter(modelos.Reserva.id == reserva_id).first()
+    if not db_reserva:
+        raise HTTPException(status_code=404, detail="Reserva não encontrada")
+    
+    db.delete(db_reserva)
+    db.commit()
+    return {"message": "Reserva excluída com sucesso"}

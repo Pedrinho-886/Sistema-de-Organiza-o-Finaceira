@@ -153,16 +153,13 @@ class ApiService {
   }
 
   Future<List<dynamic>> listarTodasTransacoes(int usuarioId) async {
-    // Primeiro pegamos as contas do usuário
     final contas = await listarContas(usuarioId);
     List<dynamic> todasTransacoes = [];
 
-    // Para cada conta, buscamos as transações
     for (var conta in contas) {
       final response = await http.get(Uri.parse('$baseUrl/transacoes/${conta['id']}'));
       if (response.statusCode == 200) {
         final transacoesConta = jsonDecode(response.body);
-        // Adicionamos o nome da conta para exibir na lista
         for (var t in transacoesConta) {
           t['nome_conta'] = conta['nome'];
         }
@@ -170,9 +167,70 @@ class ApiService {
       }
     }
 
-    // Ordenar por data (mais recente primeiro)
     todasTransacoes.sort((a, b) => b['data'].compareTo(a['data']));
-    
     return todasTransacoes;
+  }
+
+  // --- CRUD Reservas ---
+  Future<List<dynamic>> listarReservas(int usuarioId) async {
+    final response = await http.get(Uri.parse('$baseUrl/reservas/$usuarioId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Erro ao carregar reservas');
+  }
+
+  Future<Map<String, dynamic>> criarReserva({
+    required int usuarioId,
+    required String nomeMeta,
+    required double valorMeta,
+    required double valorAcumulado,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reservas/'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'usuario_id': usuarioId,
+        'nome_meta': nomeMeta,
+        'valor_meta': valorMeta,
+        'valor_acumulado': valorAcumulado,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Erro ao criar reserva');
+    }
+  }
+
+  Future<Map<String, dynamic>> atualizarReserva({
+    required int id,
+    required String nomeMeta,
+    required double valorMeta,
+    required double valorAcumulado,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/reservas/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'nome_meta': nomeMeta,
+        'valor_meta': valorMeta,
+        'valor_acumulado': valorAcumulado,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Erro ao atualizar reserva');
+    }
+  }
+
+  Future<void> excluirReserva(int id) async {
+    final response = await http.delete(Uri.parse('$baseUrl/reservas/$id'));
+    if (response.statusCode != 200) {
+      throw Exception('Erro ao excluir reserva');
+    }
   }
 }
